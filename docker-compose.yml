@@ -13,12 +13,22 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - REDIS_HOST=redis
-      - LOCAL_MODEL_URL=http://local-llm:5000/generate
+      - LOCAL_MODEL_URL=http://local_llm:11434/api/generate
+      - PYTHONUNBUFFERED=1
     depends_on:
       - redis
 
   local-llm:
-    build: ./local_llm_image
+    image: ollama/ollama
     container_name: local_llm
     ports:
-      - "5000:5000"
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: always
+    entrypoint: ["/bin/sh", "-c", "ollama serve && sleep 5 && ollama pull llama3"]

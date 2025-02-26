@@ -9,7 +9,7 @@ This project is designed to launch a simple LLM Proxy, that will take an input, 
 - Local LLM running in a docker image
 
 ## Prerequisites
-- Docker
+- Docker (If you are on Linux, make sure to run docker engine and not docker-desktop, since the ollama image does not seem to bind to gpus from docker desktop on Linux)
 - Docker Compose
 - An OpenAI Api Key accessible through the `OPENAI_API_KEY` environment variable
 
@@ -22,6 +22,7 @@ This project is designed to launch a simple LLM Proxy, that will take an input, 
   ```sh
   cd llm_proxy
   ```
+3. Follow the instructions from [Ollama Docker Image](https://hub.docker.com/r/ollama/ollama) to setup the usage of your graphics card.
 
 ## Usage
 1. Start the application:
