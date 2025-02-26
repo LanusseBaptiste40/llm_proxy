@@ -16,9 +16,13 @@ services:
       - LOCAL_MODEL_URL=http://local_llm:11434/api/generate
       - PYTHONUNBUFFERED=1
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      local_llm:
+        condition: service_healthy
 
-  local-llm:
+
+  local_llm:
     image: ollama/ollama
     container_name: local_llm
     ports:
@@ -31,4 +35,13 @@ services:
               count: all
               capabilities: [gpu]
     restart: always
-    entrypoint: ["/bin/sh", "-c", "ollama serve && sleep 5 && ollama pull llama3"]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list | grep -q 'llama3' && echo 'Healthy' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 1m
+    entrypoint: ["/bin/sh", "-c", "
+      ollama serve & \
+      sleep 5 && ollama pull llama3 & tail -f /dev/null
+    "]
