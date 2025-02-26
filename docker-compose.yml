@@ -21,7 +21,6 @@ services:
       local_llm:
         condition: service_healthy
 
-
   local_llm:
     image: ollama/ollama
     container_name: local_llm
@@ -45,3 +44,55 @@ services:
       ollama serve & \
       sleep 5 && ollama pull llama3 & tail -f /dev/null
     "]
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm
+    volumes:
+      - ./litellm_proxy_server/config.yaml:/app/config.yaml
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=postgresql://llmproxy:dbpassword9090@postgresql:5432/litellm
+      - OLLAMA_API_BASE=http://local_llm:11434
+      - STORE_MODEL_IN_DB=True
+    ports:
+      - "4000:4000"
+    command: ["--config", "/app/config.yaml", "--detailed_debug"]
+    depends_on:
+      prometheus:
+        condition: service_started
+      postgresql:
+        condition: service_healthy
+      local_llm:
+        condition: service_healthy
+
+  postgresql:
+    image: postgres
+    container_name: postgresql
+    restart: always
+    environment:
+      - POSTGRES_DB=litellm
+      - POSTGRES_USER=llmproxy
+      - POSTGRES_PASSWORD=dbpassword9090
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d litellm -U llmproxy"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=15d"]
+    restart: always
+
+volumes:
+  prometheus_data:
+    driver: local
