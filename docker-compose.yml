@@ -1,47 +1,95 @@
 services:
-  redis:
-    image: "redis:alpine"
-    container_name: redis
-    ports:
-      - "6379:6379"
+  # redis:
+  #   image: "redis:alpine"
+  #   container_name: redis
+  #   ports:
+  #     - "6379:6379"
 
-  llm_proxy:
-    build: ./llm_proxy_image
-    container_name: llm_proxy
-    ports:
-      - "8000:8000"
+  # llm_proxy:
+  #   build: ./llm_proxy_image
+  #   container_name: llm_proxy
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #     - REDIS_HOST=redis
+  #     - LOCAL_MODEL_URL=http://local_llm:11434/api/generate
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     redis:
+  #       condition: service_started
+  #     local_llm:
+  #       condition: service_healthy
+
+  # local_llm:
+  #   image: ollama/ollama
+  #   container_name: local_llm
+  #   ports:
+  #     - "11434:11434"
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+  #   restart: always
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "ollama list | grep -q 'llama3' && echo 'Healthy' || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 18
+  #     start_period: 1m
+  #   entrypoint: ["/bin/sh", "-c", "
+  #     ollama serve & \
+  #     sleep 5 && ollama pull llama3 & tail -f /dev/null
+  #   "]
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm
+    volumes:
+      - ./litellm_proxy_server/config.yaml:/app/config.yaml
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - REDIS_HOST=redis
-      - LOCAL_MODEL_URL=http://local_llm:11434/api/generate
-      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://llmproxy:dbpassword9090@postgresql:5432/litellm
+      - STORE_MODEL_IN_DB=True
+    ports:
+      - "4000:4000"
+    command: ["--config", "/app/config.yaml", "--detailed_debug"]
     depends_on:
-      redis:
+      prometheus:
         condition: service_started
-      local_llm:
+      postgresql:
         condition: service_healthy
 
-
-  local_llm:
-    image: ollama/ollama
-    container_name: local_llm
-    ports:
-      - "11434:11434"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+  postgresql:
+    image: postgres
+    container_name: postgresql
     restart: always
+    environment:
+      - POSTGRES_DB=litellm
+      - POSTGRES_USER=llmproxy
+      - POSTGRES_PASSWORD=dbpassword9090
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "ollama list | grep -q 'llama3' && echo 'Healthy' || exit 1"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -d litellm -U llmproxy"]
+      interval: 1s
       timeout: 5s
-      retries: 18
-      start_period: 1m
-    entrypoint: ["/bin/sh", "-c", "
-      ollama serve & \
-      sleep 5 && ollama pull llama3 & tail -f /dev/null
-    "]
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=15d"]
+    restart: always
+
+volumes:
+  prometheus_data:
+    driver: local
