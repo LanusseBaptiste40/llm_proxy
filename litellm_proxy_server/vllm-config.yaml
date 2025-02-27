@@ -1,0 +1,8 @@
+include:
+  - base-config.yaml
+
+model_list:
+  - model_name: facebook/opt-125m
+    litellm_params:
+      model: hosted_vllm/facebook/opt-125m
+      api_base: os.environ/VLLM_API_BASE

@@ -6,12 +6,14 @@ This project is designed to launch a simple LLM Proxy, that will take an input, 
 ## Features
 - LLM Proxy with rate limiting
 - Access to OpenAI
-- Local LLM running in a docker image
+- Local LLM running in a docker image using Ollama or Vllm
+- LiteLLM as a Proxy
 
 ## Prerequisites
 - Docker (If you are on Linux, make sure to run docker engine and not docker-desktop, since the ollama image does not seem to bind to gpus from docker desktop on Linux)
 - Docker Compose
 - An OpenAI Api Key accessible through the `OPENAI_API_KEY` environment variable
+- (optional) a Huggingface token accessible through the `HUGGINGFACE_TOKEN` environment variable if you wish to run the VLLM image.
 
 ## Installation
 1. Clone the repository:
@@ -27,7 +29,8 @@ This project is designed to launch a simple LLM Proxy, that will take an input, 
 ## Usage
 1. Start the application:
   ```sh
-  docker compose up --build
+  docker compose -f docker-compose.yml -f docker-compose-ollama.yml up --build # To run with the local proxy and the ollama image
+  docker compose -f docker-compose.yml -f docker-compose-vllm.yml up # To run with the vllm image
   ```
 2. Send the following curl request to make a call:
   ```sh

@@ -1,0 +1,29 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: vllm
+    runtime: nvidia
+    ports:
+      - "8001:8000"
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN}
+    ipc: "host"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - ./vllm/tool_chat_template_opt-125m.jinja:/root/tool_chat_template.jinja
+    command: ["--model", "facebook/opt-125m", "--chat-template", "/root/tool_chat_template.jinja"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  litellm:
+    environment:
+      - VLLM_API_BASE=http://vllm:8000/v1
+    volumes:
+      - ./litellm_proxy_server/vllm-config.yaml:/app/config.yaml
+    depends_on:
+      vllm:
+        condition: service_healthy
