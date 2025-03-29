@@ -1,0 +1,121 @@
+type: collection.insomnia.rest/5.0
+name: Litellm
+meta:
+  id: wrk_222fdd16249f42a3a611bc5c40961ace
+  created: 1743249325118
+  modified: 1743249325118
+collection:
+  - name: LiteLLM
+    meta:
+      id: fld_1e437d09beb14a9fa8116a81a5fcde9a
+      created: 1743249337957
+      modified: 1743249452442
+      sortKey: -1743249337957
+    children:
+      - url: "{{ _.url }}/v1/models"
+        name: Get Models
+        meta:
+          id: req_7cf5c828d25f491b9320d539fef438c8
+          created: 1743249361817
+          modified: 1743249615181
+          isPrivate: false
+          sortKey: -1743249361817
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.url }}/chat/completions"
+        name: Ask a question through Litellm
+        meta:
+          id: req_9cf9b6a02b394ebd825c0cb85216dd44
+          created: 1743249479050
+          modified: 1743250107055
+          isPrivate: false
+          sortKey: -1743249361717
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"model": "{{ _.model_name }}",
+            	"messages": [
+            		{
+            			"role": "user",
+            			"content": "Once upon a time,"
+            		}
+            	]
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        authentication:
+          type: bearer
+          token: "{{ _.api_key }}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.url }}/chat/completions"
+        name: Ask a question through Litellm as a stream
+        meta:
+          id: req_ec55b500988f4fd09e2a49354f05509b
+          created: 1743249561597
+          modified: 1743249691801
+          isPrivate: false
+          sortKey: -1743249361617
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"model": "facebook/opt-125m",
+            	"messages": [
+            		{
+            			"role": "user",
+            			"content": "Once upon a time,"
+            		}
+            	],
+            	"stream": true
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Accept
+            value: text/event-stream
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+    authentication:
+      type: bearer
+      token: "{{ _.api_key }}"
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_9abafaff97c799f1da1cbc664025b82784bed2a2
+    created: 1743249325119
+    modified: 1743249325119
+environments:
+  name: LiteLLM
+  meta:
+    id: env_9abafaff97c799f1da1cbc664025b82784bed2a2
+    created: 1743249325119
+    modified: 1743249422808
+    isPrivate: false
+  data:
+    url: http://localhost:4000
+    api_key: sk-1234
+    model_name: facebook/opt-125m
